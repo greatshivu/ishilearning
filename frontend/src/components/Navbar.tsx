@@ -4,6 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { LogOut, User, Menu, X } from 'lucide-react';
 import { toast } from "sonner";
 import { useIdleLogout } from '../services/useIdleLogout';
+import logoImage from "../assets/logo.svg" ;
+
+export function Nav() {
+  return <img src={logoImage} alt="icon" width="64" height="64"  />;
+}
 
 const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -28,12 +33,13 @@ const Navbar: React.FC = () => {
     onWarning: () => toast.warning("You will be logged out in 1 minute due to inactivity."),
     onLogout: () => doLogout("Logged out due to inactivity."),
   });
+  
 
   return (
     <nav className="sticky top-0 z-40 w-full border-b bg-white/80 backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <Link to="/" className="flex items-center text-2xl font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-          <img src="public/logo.svg" width="64" height="64" />Shiva's Blog
+          <Nav/>Shiva's Blog
         </Link>
 
         {/* Desktop Menu */}
