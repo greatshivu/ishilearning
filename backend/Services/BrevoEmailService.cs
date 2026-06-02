@@ -18,9 +18,9 @@ public class BrevoEmailService : IEmailService
 
     public async Task SendEmailAsync(string to, string subject, string body)
     {
-        var apiKey = _config["Brevo:ApiKey"];
-        var senderEmail = _config["Brevo:SenderEmail"];
-        var senderName = _config["Brevo:SenderName"];
+        var apiKey = _config["Brevo:ApiKey"].Decrypt();
+        var senderEmail = _config["Brevo:SenderEmail"].Decrypt();
+        var senderName = _config["Brevo:SenderName"].Decrypt();
 
         var payload = new
         {
