@@ -21,9 +21,9 @@ public class AzureChatbotService : IChatbotService
 
     public async Task<string> GetResponseAsync(string message, string? threadId = null)
     {
-        var endpoint = _config["Azure:OpenAiEndpoint"];
-        var apiKey = _config["Azure:OpenAiApiKey"];
-        var deployment = _config["Azure:DeploymentName"];
+        var endpoint = _config["Azure:OpenAiEndpoint"].Decrypt();
+        var apiKey = _config["Azure:OpenAiApiKey"].Decrypt();
+        var deployment = _config["Azure:DeploymentName"].Decrypt();
 
         var url = $"{endpoint}/openai/deployments/{deployment}/chat/completions?api-version=2024-02-15-preview";
 

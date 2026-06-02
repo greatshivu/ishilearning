@@ -12,7 +12,7 @@ const LandingPage: React.FC = () => {
       <section className="relative flex min-h-[70vh] items-center justify-center bg-blue-600 px-4 text-center text-white">
         <div className="absolute inset-0 opacity-20 bg-[url('/assets/hero.png')] bg-cover bg-center"></div>
         <div className="relative z-10 max-w-4xl">
-          <img src="public/logo.svg" className="mx-auto" width="512" height="512" />
+          <img src="/logo.svg" className="mx-auto" width="512" height="512" />
           <p className="mb-8 text-xl text-blue-100 md:text-2xl">
             Learn C#, Azure, AI, MAUI, React, and more with high-quality content and real-world projects.
           </p>

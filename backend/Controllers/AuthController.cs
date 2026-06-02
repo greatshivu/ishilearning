@@ -7,6 +7,7 @@ using backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Google.Apis.Auth;
 
 namespace backend.Controllers;
 
@@ -18,7 +19,7 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _config;
     private readonly IEmailService _emailService;
     private readonly ITurnstileService _turnstileService;
-
+    
     public AuthController(
         UserManager<ApplicationUser> userManager,
         IConfiguration config,
@@ -130,18 +131,67 @@ public class AuthController : ControllerBase
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]!.Decrypt()));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.Now.AddMinutes(Convert.ToDouble(_config["Jwt:ExpiryMinutes"]));
 
         var token = new JwtSecurityToken(
-            _config["Jwt:Issuer"],
-            _config["Jwt:Audience"],
+            _config["Jwt:Issuer"].Decrypt(),
+            _config["Jwt:Audience"].Decrypt(),
             claims,
             expires: expires,
             signingCredentials: creds
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    [HttpPost("sso/{provider}")]
+    public async Task<IActionResult> SsoLogin(string provider, SsoLoginRequest request)
+    {
+        var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
+        var email = payload.Email;
+        var providerUserId = payload.Subject;
+
+        var user = await _userManager.FindByEmailAsync(payload.Email);
+        if (user == null)
+        {
+            user = new ApplicationUser
+            {
+                UserName = payload.Email,
+                Email = email,
+                FullName = payload.Email
+            };
+
+            var password = $"Sso{Guid.NewGuid().ToString().Substring(0, 10)}@9";
+
+            var result = await _userManager.CreateAsync(user, password);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var resultConfirmation = await _userManager.ConfirmEmailAsync(user, code);
+            if (!resultConfirmation.Succeeded) return BadRequest("Invalid verification code");
+        }
+        if(user.ExternalLogins.Any())
+        {
+            var externalLogin = user.ExternalLogins.Where(el => el.Provider == provider && el.ProviderUserId == providerUserId).FirstOrDefault();
+            if(externalLogin == null)
+            {
+                externalLogin = new UserExternalLogin
+                {
+                    UserId = user.Id,
+                    Provider = provider,
+                    ProviderUserId = providerUserId,
+                    CreatedDate = DateTime.UtcNow
+                };
+                user.ExternalLogins.Add(externalLogin);
+                await _userManager.UpdateAsync(user);
+            }
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = GenerateJwtToken(user, roles);
+
+        return Ok(new { token, user = new { user.Email, user.FullName, roles } });
     }
 }

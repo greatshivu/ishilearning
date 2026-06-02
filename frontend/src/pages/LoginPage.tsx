@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Turnstile from '../components/Turnstile';
+import { GoogleLogin } from "@react-oauth/google";
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -62,6 +63,21 @@ const LoginPage: React.FC = () => {
           >
             Sign In
           </button>
+           <GoogleLogin
+                onSuccess={async (credentialResponse) => {
+                    console.log(credentialResponse.credential);
+                    try {
+                          const res = await api.post('/auth/sso/google', { idToken: credentialResponse.credential });
+                          login(res.data.token, res.data.user);
+                          navigate('/');
+                        } catch (err: any) {
+                          setError(err.readableMessage || 'Login failed');
+                        }
+                }}
+                onError={() => {
+                    console.log("Login Failed");
+                }}
+            />
         </form>
         <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
           Don't have an account? <Link to="/register" className="text-blue-500 hover:underline">Register</Link>

@@ -29,18 +29,23 @@ api.interceptors.response.use(
 );
 
 function extractErrors(err: any) {
-  const data = err.response?.data;
+    const data = err.response?.data;
 
+  if(typeof data === 'string') return data;
   // ASP.NET Core validation errors
   if (data && typeof data === "object") {
-    const messages = Object.values(data)
-      .flat()
-      .filter(x => typeof x === "string");
-
+    let messages = [];
+    const list = Object.values(data).flat();
+    for (let index = 0; index < list.length; index++) {
+      const element: any = list[index];
+      if(typeof element == "string") messages.push(element);
+      if(typeof element == "object" && element.description) messages.push(element.description);
+    }
     if (messages.length > 0) return messages.join(" ");
   }
 
-  return "Something went wrong.";
+  // Normalize error message
+  return err?.message || err?.error || data?.message || data?.error || data?.title || "Something went wrong.";
 }
 
 

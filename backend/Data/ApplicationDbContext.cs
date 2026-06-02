@@ -18,6 +18,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Feedback> Feedbacks { get; set; }
     public DbSet<Visit> Visits { get; set; }
     public DbSet<AppSettings> Settings { get; set; }
+    public DbSet<UserExternalLogin> UserExternalLogins { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
