@@ -12,6 +12,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Video> Videos { get; set; }
     public DbSet<CodeSnippet> CodeSnippets { get; set; }
+    public DbSet<SnippetCodeBlock> SnippetCodeBlocks { get; set; }
     public DbSet<Repository> Repositories { get; set; }
     public DbSet<Blog> Blogs { get; set; }
     public DbSet<DictionaryEntry> DictionaryEntries { get; set; }

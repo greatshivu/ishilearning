@@ -50,6 +50,16 @@ public class ContentController : ControllerBase
         return Ok(video);
     }
 
+    [HttpPut("videos/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateVideo(int id, [FromBody] Video video)
+    {
+        if (id != video.Id) return BadRequest();
+        _context.Entry(video).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+        return Ok(video);
+    }
+
     [HttpDelete("videos/{id}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteVideo(int id)
@@ -65,11 +75,21 @@ public class ContentController : ControllerBase
     [HttpGet("snippets")]
     public async Task<IActionResult> GetSnippets([FromQuery] string? language, [FromQuery] string? subject)
     {
-        var query = _context.CodeSnippets.AsQueryable();
-        if (!string.IsNullOrEmpty(language)) query = query.Where(s => s.Language == language);
+        var query = _context.CodeSnippets.Include(s => s.CodeBlocks).AsQueryable();
+        if (!string.IsNullOrEmpty(language)) query = query.Where(s => s.Language == language || s.CodeBlocks.Any(b => b.Language == language));
         if (!string.IsNullOrEmpty(subject)) query = query.Where(s => s.Subject == subject);
         
         return Ok(await query.OrderByDescending(s => s.CreatedAt).ToListAsync());
+    }
+
+    [HttpPost("snippets/{id}/view")]
+    public async Task<IActionResult> IncrementSnippetView(int id)
+    {
+        var snippet = await _context.CodeSnippets.FindAsync(id);
+        if (snippet == null) return NotFound();
+        snippet.ViewCount++;
+        await _context.SaveChangesAsync();
+        return Ok();
     }
 
     [HttpPost("snippets")]
@@ -87,9 +107,32 @@ public class ContentController : ControllerBase
     public async Task<IActionResult> UpdateSnippet(int id, [FromBody] CodeSnippet snippet)
     {
         if (id != snippet.Id) return BadRequest();
-        _context.Entry(snippet).State = EntityState.Modified;
+        
+        var existingSnippet = await _context.CodeSnippets
+            .Include(s => s.CodeBlocks)
+            .FirstOrDefaultAsync(s => s.Id == id);
+            
+        if (existingSnippet == null) return NotFound();
+
+        _context.Entry(existingSnippet).CurrentValues.SetValues(snippet);
+
+        foreach (var existingBlock in existingSnippet.CodeBlocks.ToList())
+        {
+            if (!snippet.CodeBlocks.Any(b => b.Id == existingBlock.Id))
+                _context.SnippetCodeBlocks.Remove(existingBlock);
+        }
+
+        foreach (var block in snippet.CodeBlocks)
+        {
+            var existingBlock = existingSnippet.CodeBlocks.FirstOrDefault(b => b.Id == block.Id && b.Id != 0);
+            if (existingBlock != null)
+                _context.Entry(existingBlock).CurrentValues.SetValues(block);
+            else
+                existingSnippet.CodeBlocks.Add(block);
+        }
+
         await _context.SaveChangesAsync();
-        return Ok(snippet);
+        return Ok(existingSnippet);
     }
 
     [HttpDelete("snippets/{id}")]
@@ -117,7 +160,18 @@ public class ContentController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AddRepo([FromBody] Repository repo)
     {
+        repo.CreatedAt = DateTime.UtcNow;
         _context.Repositories.Add(repo);
+        await _context.SaveChangesAsync();
+        return Ok(repo);
+    }
+
+    [HttpPut("repos/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateRepo(int id, [FromBody] Repository repo)
+    {
+        if (id != repo.Id) return BadRequest();
+        _context.Entry(repo).State = EntityState.Modified;
         await _context.SaveChangesAsync();
         return Ok(repo);
     }
@@ -160,6 +214,27 @@ public class ContentController : ControllerBase
         return Ok(blog);
     }
 
+    [HttpPut("blogs/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateBlog(int id, [FromBody] Blog blog)
+    {
+        if (id != blog.Id) return BadRequest();
+        _context.Entry(blog).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+        return Ok(blog);
+    }
+
+    [HttpDelete("blogs/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteBlog(int id)
+    {
+        var blog = await _context.Blogs.FindAsync(id);
+        if (blog == null) return NotFound();
+        _context.Blogs.Remove(blog);
+        await _context.SaveChangesAsync();
+        return Ok();
+    }
+
     // Dictionary
     [HttpGet("dictionary")]
     public async Task<IActionResult> GetDictionary([FromQuery] string? search)
@@ -179,5 +254,26 @@ public class ContentController : ControllerBase
         _context.DictionaryEntries.Add(entry);
         await _context.SaveChangesAsync();
         return Ok(entry);
+    }
+
+    [HttpPut("dictionary/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateDictionaryEntry(int id, [FromBody] DictionaryEntry entry)
+    {
+        if (id != entry.Id) return BadRequest();
+        _context.Entry(entry).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+        return Ok(entry);
+    }
+
+    [HttpDelete("dictionary/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteDictionaryEntry(int id)
+    {
+        var entry = await _context.DictionaryEntries.FindAsync(id);
+        if (entry == null) return NotFound();
+        _context.DictionaryEntries.Remove(entry);
+        await _context.SaveChangesAsync();
+        return Ok();
     }
 }

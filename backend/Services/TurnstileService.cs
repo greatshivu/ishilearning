@@ -23,7 +23,7 @@ public class TurnstileService : ITurnstileService
     public async Task<bool> VerifyTokenAsync(string token)
     {
         var enabled = _config.GetValue<bool>("Cloudflare:Enabled");
-        if (!_env.IsDevelopment() && !enabled)
+        if (_env.IsDevelopment() || !enabled)
         {
             return true;
         }

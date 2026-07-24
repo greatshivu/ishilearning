@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { User, Lock, Phone as PhoneIcon, Save } from 'lucide-react';
+import { User, Lock, Phone as PhoneIcon, Save, Mail } from 'lucide-react';
 
 const ProfilePage: React.FC = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     phone: '',
     currentPassword: '',
-    newPassword: ''
+    newPassword: '',
+    email: ''
   });
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -15,7 +16,7 @@ const ProfilePage: React.FC = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       const res = await api.get('/profile');
-      setFormData(prev => ({ ...prev, fullName: res.data.fullName, phone: res.data.phone || '' }));
+      setFormData(prev => ({ ...prev, fullName: res.data.fullName, phone: res.data.phone || '', email: res.data.email }));
     };
     fetchProfile();
   }, []);
@@ -48,6 +49,15 @@ const ProfilePage: React.FC = () => {
               className="mt-1 w-full rounded-lg border p-3 dark:border-gray-700 dark:bg-gray-800"
               value={formData.fullName}
               onChange={(e) => setFormData({...formData, fullName: e.target.value})}
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium"><Mail size={16} /> Email</label>
+            <input
+              type="text"
+              className="mt-1 w-full rounded-lg border p-3 dark:border-gray-700 dark:bg-gray-800 disabled:bg-gray-200"
+              value={formData.email}
+              disabled={true}
             />
           </div>
           <div>
