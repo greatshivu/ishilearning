@@ -45,3 +45,5 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+/backend/Properties/PublishProfiles/FTPProfile.pubxml
+/backend/Properties/PublishProfiles/FolderProfile.pubxml

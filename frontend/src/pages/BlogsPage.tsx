@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import api from '../services/api';
-import { Eye, Calendar } from 'lucide-react';
+import { Eye, Calendar, Copy, Check } from 'lucide-react';
 
 interface Blog {
   id: number;
@@ -14,6 +15,37 @@ interface Blog {
 const BlogsPage: React.FC = () => {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
+    const match = /language-(\w+)/.exec(className || '');
+    const codeString = String(children).replace(/\n$/, '');
+    const isCodeBlock = !inline && (match || codeString.includes('\n'));
+
+    if (isCodeBlock) {
+      return (
+        <div className="relative group/code my-4">
+          <button 
+            onClick={() => copyToClipboard(codeString)}
+            className="absolute right-3 top-3 z-10 rounded-md bg-gray-800 p-1.5 text-gray-400 opacity-0 transition-opacity hover:bg-gray-700 hover:text-white group-hover/code:opacity-100"
+            title="Copy to clipboard"
+          >
+            {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+          </button>
+          <pre className={`!my-0 rounded-lg !bg-gray-900 ${className || ''}`} {...props}>
+            <code className={className}>{children}</code>
+          </pre>
+        </div>
+      );
+    }
+    return <code className={className} {...props}>{children}</code>;
+  };
 
   useEffect(() => {
     const fetchBlogs = async () => {
@@ -39,7 +71,7 @@ const BlogsPage: React.FC = () => {
           <span className="flex items-center gap-1"><Eye size={16} /> {selectedBlog.viewCount} views</span>
         </div>
         <div className="prose prose-lg dark:prose-invert max-w-none">
-          {selectedBlog.content.split('\n').map((para, i) => <p key={i}>{para}</p>)}
+          <ReactMarkdown components={{ code: CodeBlock }}>{selectedBlog.content}</ReactMarkdown>
         </div>
       </div>
     );
@@ -51,10 +83,10 @@ const BlogsPage: React.FC = () => {
       <div className="grid gap-12 lg:grid-cols-2">
         {blogs.map((blog) => (
           <div key={blog.id} className="group cursor-pointer" onClick={() => handleReadMore(blog)}>
-            <div className="mb-4 overflow-hidden rounded-2xl bg-gray-100 aspect-video dark:bg-gray-800">
-              {/* Image placeholder */}
+            {/* <div className="mb-4 overflow-hidden rounded-2xl bg-gray-100 aspect-video dark:bg-gray-800">
+              
               <div className="h-full w-full bg-gradient-to-br from-blue-500 to-purple-600 opacity-80"></div>
-            </div>
+            </div> */}
             <h2 className="mb-2 text-2xl font-bold group-hover:text-blue-500 transition-colors">{blog.title}</h2>
             <p className="mb-4 line-clamp-3 text-gray-600 dark:text-gray-400">{blog.summary}</p>
             <div className="flex items-center gap-4 text-sm text-gray-500">
